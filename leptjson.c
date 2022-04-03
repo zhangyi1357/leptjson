@@ -1,6 +1,8 @@
 #include "leptjson.h"
 #include <assert.h>  /* assert() */
 #include <stdlib.h>  /* NULL, strtod() */
+#include <math.h>    /* HUGE_VAL */
+#include <errno.h>   /* errno, ERANGE */
 
 #define EXPECT(c, ch) do { assert(*c->json == (ch)); c->json++; } while(0)
 
@@ -30,13 +32,41 @@ static int lept_parse_literal(lept_context* c, lept_value* v, const char* litera
     return LEPT_PARSE_OK;
 }
 
+#define ISDIGIT(ch)     ((ch) >= '0' && (ch) <= '9')
+
 static int lept_parse_number(lept_context* c, lept_value* v) {
-    char* end;
-    /* TODO validate number */
-    v->n = strtod(c->json, &end);
-    if (c->json == end)
-        return LEPT_PARSE_INVALID_VALUE;
-    c->json = end;
+    const char* p = c->json;
+
+    /* check validation of the number */
+    if (*p == '-') p++;  /* skip '-' */
+    /* parse integer */
+    if (!ISDIGIT(*p)) return LEPT_PARSE_INVALID_VALUE;
+    if (*p == '0')
+        p++;
+    else
+        for (p++; ISDIGIT(*p); p++);
+    /* parse fraction */
+    if (*p == '.') {
+        p++;
+        /* at least one number */
+        if (!ISDIGIT(*p)) return LEPT_PARSE_INVALID_VALUE;
+        for (p++; ISDIGIT(*p); p++);
+    }
+    /* parse exponent */
+    if (*p == 'E' || *p == 'e') {
+        p++;
+        if (*p == '+' || *p == '-') p++; /* skip '+' or '-' */
+        /* at least one number */
+        if (!ISDIGIT(*p)) return LEPT_PARSE_INVALID_VALUE;
+        for (p++; ISDIGIT(*p); p++);
+    }
+
+    /* conversion from string to double */
+    errno = 0;
+    v->n = strtod(c->json, NULL);
+    if (errno == ERANGE && (v->n == +HUGE_VAL || v->n == -HUGE_VAL))
+        return LEPT_PARSE_NUMBER_TOO_BIG;
+    c->json = p;
     v->type = LEPT_NUMBER;
     return LEPT_PARSE_OK;
 }
@@ -64,8 +94,10 @@ int lept_parse(lept_value* v, const char* json) {
     ret = lept_parse_value(&c, v);
     if (ret == LEPT_PARSE_OK) {
         lept_parse_whitespace(&c);
-        if (*c.json != '\0')
+        if (*c.json != '\0') {
+            v->type = LEPT_NULL;
             ret = LEPT_PARSE_ROOT_NOT_SINGULAR;
+        }
     }
     return ret;
 }

@@ -15,7 +15,8 @@ enum {
     LEPT_PARSE_OK = 0,
     LEPT_PARSE_EXPECT_VALUE,       /* empty json */
     LEPT_PARSE_INVALID_VALUE,      /* unspported value */
-    LEPT_PARSE_ROOT_NOT_SINGULAR   /* mutiple values */
+    LEPT_PARSE_ROOT_NOT_SINGULAR,   /* mutiple values */
+    LEPT_PARSE_NUMBER_TOO_BIG
 };
 
 lept_type lept_get_type(const lept_value* v);
