@@ -7,9 +7,9 @@ typedef enum { LEPT_NULL, LEPT_FALSE, LEPT_TRUE, LEPT_NUMBER, LEPT_STRING, LEPT_
 
 typedef struct {
     union {
-        struct { char* s; size_t len; } s;  /* string: null-terminated string, string length */
-        double n;                           /* number */
-    } u;
+        struct { char* s; size_t len; }s;  /* string: null-terminated string, string length */
+        double n;                          /* number */
+    }u;
     lept_type type;
 }lept_value;
 
@@ -21,7 +21,9 @@ enum {
     LEPT_PARSE_NUMBER_TOO_BIG,
     LEPT_PARSE_MISS_QUOTATION_MARK,
     LEPT_PARSE_INVALID_STRING_ESCAPE,
-    LEPT_PARSE_INVALID_STRING_CHAR
+    LEPT_PARSE_INVALID_STRING_CHAR,
+    LEPT_PARSE_INVALID_UNICODE_HEX,
+    LEPT_PARSE_INVALID_UNICODE_SURROGATE
 };
 
 #define lept_init(v) do { (v)->type = LEPT_NULL; } while(0)
